@@ -26,6 +26,11 @@ pub(crate) const AUTO_PAUSE_BURST_THRESHOLD: u32 = 10;
 /// mid-burst yet.
 pub(crate) const AUTO_PAUSE_BURST_CHECK_MIN_RAISED_BPS: i128 = 5000;
 pub(crate) const LIST_MAX_LIMIT: u32 = 50;
+/// #518: max number of `(campaign_id, amount)` pairs accepted by
+/// `batch_contribute` in a single call. Each item pays the full per-item cost
+/// of `contribute` (cap checks, burst guard, two persistent writes), so this
+/// is kept well under `verify_campaigns`' read-mostly batch size of 50.
+pub(crate) const MAX_BATCH_CONTRIBUTE_SIZE: u32 = 20;
 
 mod admin;
 mod bookmarks;
@@ -89,6 +94,18 @@ impl ProofOfHeart {
         contributions::claim_refund(&env, campaign_id, contributor)
     }
 
+    /// Contributes to multiple campaigns in a single transaction, moving the
+    /// combined token amount in one transfer instead of one per campaign
+    /// (#518). Every item is validated with the same rules as `contribute`;
+    /// if any item fails, the whole batch reverts atomically.
+    pub fn batch_contribute(
+        env: Env,
+        contributor: Address,
+        contributions: soroban_sdk::Vec<(u32, i128)>,
+    ) -> Result<(), Error> {
+        contributions::batch_contribute(&env, contributor, contributions)
+    }
+
     // ── Withdrawals ───────────────────────────────────────────────────────────
 
     pub fn withdraw_funds(env: Env, campaign_id: u32) -> Result<(), Error> {
@@ -112,6 +129,19 @@ impl ProofOfHeart {
 
     pub fn cancel_campaign(env: Env, campaign_id: u32) -> Result<(), Error> {
         campaigns::cancel::cancel_campaign(&env, campaign_id)
+    }
+
+    /// Admin-only targeted fraud response: cancels a single campaign without
+    /// pausing the entire platform (#508). Unlike `cancel_campaign`, this
+    /// bypasses the goal-met anti-rug-pull guard so admins can stop verified
+    /// fraudulent campaigns even after they've hit their funding goal.
+    pub fn admin_cancel_campaign(
+        env: Env,
+        admin: Address,
+        campaign_id: u32,
+        reason: String,
+    ) -> Result<(), Error> {
+        campaigns::cancel::admin_cancel_campaign(&env, admin, campaign_id, reason)
     }
 
     pub fn update_campaign(
