@@ -338,7 +338,7 @@ fn test_set_personal_cap_equal_lifetime_blocks_further_contributions() {
 
 // ── #354 vote weight checked addition ──
 #[test]
-fn test_vote_weight_overflow_fails() {
+fn test_vote_weight_does_not_overflow_with_1_address_1_vote() {
     let (env, _admin, creator, contributor, _, _token, token_admin, client) = setup_env();
     let campaign_id = client.create_campaign(&make_campaign_params_simple(&env, &creator));
 
@@ -352,8 +352,10 @@ fn test_vote_weight_overflow_fails() {
 
     token_admin.mint(&contributor, &501);
 
-    let res = client.try_vote_on_campaign(&campaign_id, &contributor, &true);
-    assert_eq!(res.unwrap_err().unwrap(), Error::Overflow);
+    // With 1-address-1-vote, the weight only increments by 1, so no overflow occurs
+    // even when ApproveWeight is near i128::MAX (#469).
+    client.vote_on_campaign(&campaign_id, &contributor, &true);
+    assert_eq!(client.get_approve_votes(&campaign_id), 1);
 }
 
 // ── #360 resume_campaign admin-path coverage ──────────────────────────────────
