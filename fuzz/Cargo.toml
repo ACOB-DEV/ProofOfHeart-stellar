@@ -34,3 +34,24 @@ path = "fuzz_targets/fuzz_contribute.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "fuzz_voting"
+path = "fuzz_targets/fuzz_voting.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_lifecycle"
+path = "fuzz_targets/fuzz_lifecycle.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "fuzz_revenue"
+path = "fuzz_targets/fuzz_revenue.rs"
+test = false
+doc = false
+bench = false
