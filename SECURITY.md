@@ -51,17 +51,26 @@ We ask reporters to follow **coordinated disclosure**:
 3. We request **90 days** from the initial report before any public disclosure, to give us time to ship and deploy a fix. This window can be shortened by mutual agreement (e.g. once a fix is live and users have had time to upgrade) or extended if the fix requires unusual coordination (e.g. a contract migration).
 4. If 90 days pass without a resolution or agreed extension, the reporter may disclose publicly, but we ask that you still coordinate the exact timing and content with us where possible.
 
-### Bug Bounty
+### Bug Bounty & Rewards Scope
 
-There is currently **no formal bug bounty program** for ProofOfHeart-stellar. Valid reports are eligible for credit in release notes (with your permission) but not monetary reward at this time. This section will be updated if a bounty program is established.
+Security reports targeting core Soroban contract logic in `src/` are evaluated for rewards and public accreditation:
+
+- **In-Scope Contracts & Entrypoints**:
+  - `contribute()`, `claim_refund()`, `finalize_campaign()` — Campaign escrow & asset accounting
+  - `verify_campaign()`, `cast_vote()` — Governance & voting weight invariants
+  - Admin & storage management entrypoints in `src/storage.rs`
+- **Reward Tiers**:
+  - **P0 Critical** (Direct fund drain / auth bypass): Eligible for up to $2,500 USDC bounty + release notes credit.
+  - **P1 High** (State corruption / fee breakdown): Eligible for up to $1,000 USDC bounty + release notes credit.
+  - **P2 Medium/Low**: Eligible for public credit in release notes.
 
 ### Audits
 
-No formal third-party security audit has been conducted on this contract to date, and no audit reports are available for publication. Given the contract handles escrowed funds, we recommend treating it as **unaudited** and exercising appropriate caution (e.g. capped deployments, monitoring) until an audit is completed. This section will be updated with links to any future audit reports.
+No formal third-party security audit has been conducted on this contract to date. Given the contract handles escrowed funds, we recommend treating it as **unaudited** and exercising appropriate caution until an audit is completed.
 
 ### Scope
 
-This policy covers the on-chain Soroban smart contract (`src/`) and any official tooling in this repository. Frontend integrations or third-party services built on top of the contract are out of scope unless the vulnerability originates from the contract itself.
+This policy covers the on-chain Soroban smart contract (`src/`) and official tooling in this repository. Frontend integrations or third-party services built on top of the contract are out of scope unless the vulnerability originates from contract logic itself.
 
 ### Out of Scope
 
