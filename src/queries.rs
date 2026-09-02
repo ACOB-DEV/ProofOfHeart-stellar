@@ -131,7 +131,7 @@ fn get_campaigns_from_buckets<F>(
     total: u32,
     bucket_size: u32,
     get_bucket: F,
-) -> soroban_sdk::Vec<Campaign>
+) -> (soroban_sdk::Vec<Campaign>, u32)
 where
     F: Fn(&Env, u32) -> soroban_sdk::Vec<u32>,
 {
@@ -139,11 +139,12 @@ where
     let capped_limit = limit.min(crate::LIST_MAX_LIMIT);
 
     if start >= total || capped_limit == 0 {
-        return campaigns;
+        return (campaigns, start);
     }
 
     let end = start.saturating_add(capped_limit).min(total);
     let mut position = start;
+    let mut next_cursor = start;
 
     while position < end {
         let bucket_idx = position / bucket_size;
@@ -159,6 +160,7 @@ where
             if let Some(campaign_id) = bucket.get(idx_in_bucket) {
                 if let Some(campaign) = get_campaign(env, campaign_id) {
                     campaigns.push_back(campaign);
+                    next_cursor = position + 1;
                 }
             }
             idx_in_bucket += 1;
@@ -171,10 +173,12 @@ where
             } else {
                 bucket_start + bucket_len
             };
+        } else {
+            next_cursor = position;
         }
     }
 
-    campaigns
+    (campaigns, next_cursor)
 }
 
 pub(crate) fn get_campaigns_by_category(
@@ -182,7 +186,7 @@ pub(crate) fn get_campaigns_by_category(
     category: Category,
     offset: u32,
     limit: u32,
-) -> soroban_sdk::Vec<Campaign> {
+) -> (soroban_sdk::Vec<Campaign>, u32) {
     let total = get_category_campaign_count(env, category);
     get_campaigns_from_buckets(
         env,
@@ -205,9 +209,9 @@ pub(crate) fn get_campaigns_by_tag(
     tag: String,
     offset: u32,
     limit: u32,
-) -> soroban_sdk::Vec<Campaign> {
+) -> (soroban_sdk::Vec<Campaign>, u32) {
     if tag.len() < crate::CAMPAIGN_TAG_MIN_LEN || tag.len() > crate::CAMPAIGN_TAG_MAX_LEN {
-        return soroban_sdk::Vec::new(env);
+        return (soroban_sdk::Vec::new(env), offset);
     }
     let tag_hash = hash_text(env, &tag);
     let total = get_tag_campaign_count(env, &tag_hash);
@@ -235,7 +239,7 @@ pub(crate) fn get_creator_campaigns(
     creator: Address,
     start: u32,
     limit: u32,
-) -> soroban_sdk::Vec<Campaign> {
+) -> (soroban_sdk::Vec<Campaign>, u32) {
     let total = get_creator_campaign_count(env, &creator);
     get_campaigns_from_buckets(
         env,
