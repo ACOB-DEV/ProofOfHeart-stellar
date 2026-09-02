@@ -311,18 +311,24 @@ pub(crate) fn batch_contribute(
         let running = owed.get(token.clone()).unwrap_or(0);
         owed.set(token, running.checked_add(amount).ok_or(Error::Overflow)?);
 
-        env.events().publish(
-            ("contribution_made", campaign_id, contributor.clone()),
-            amount,
-        );
     }
 
-    // Interactions last, after every campaign's accounting is persisted.
+    // Transfers happen here, after accounting and before any events are
+    // published, so a failed transfer leaves no partial event stream.
     for (token, amount) in owed.iter() {
         soroban_sdk::token::Client::new(env, &token).transfer(
             &contributor,
             &env.current_contract_address(),
             &amount,
+        );
+    }
+
+    // Publish per-contribution events only after the aggregate transfer has
+    // succeeded, so a failed transfer leaves no partial event stream.
+    for (campaign_id, amount) in contributions.iter() {
+        env.events().publish(
+            ("contribution_made", campaign_id, contributor.clone()),
+            amount,
         );
     }
 
