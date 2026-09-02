@@ -204,6 +204,7 @@ pub(crate) fn contribute(
     check_burst_guard(env, campaign_id, &campaign, amount)?;
 
     bump_instance_ttl(env);
+    crate::storage::extend_contributor_ttl(env, campaign_id, &contributor);
     update_contribution_accounting(
         env,
         campaign_id,
@@ -293,6 +294,7 @@ pub(crate) fn batch_contribute(
 
         check_burst_guard(env, campaign_id, &campaign, amount)?;
 
+        crate::storage::extend_contributor_ttl(env, campaign_id, &contributor);
         update_contribution_accounting(
             env,
             campaign_id,
