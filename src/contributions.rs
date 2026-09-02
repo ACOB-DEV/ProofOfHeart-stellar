@@ -263,7 +263,13 @@ pub(crate) fn batch_contribute(
     // currency instead of one per contribution.
     let mut owed: soroban_sdk::Map<Address, i128> = soroban_sdk::Map::new(env);
     let mut total: i128 = 0;
+    let mut seen: soroban_sdk::Map<u32, bool> = soroban_sdk::Map::new(env);
     for (campaign_id, amount) in contributions.iter() {
+        if seen.get(campaign_id).is_some() {
+            return Err(Error::ValidationFailed);
+        }
+        seen.set(*campaign_id, true);
+
         if amount <= 0 {
             return Err(Error::ContributionMustBePositive);
         }
